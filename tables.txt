@@ -1,0 +1,76 @@
+Students
+SID  FIRSTNAME       LASTNAME        STATUS            GPA EMAIL
+---- --------------- --------------- ---------- ---------- --------------------
+B001 Anne            Broder          junior           3.17 broder@bu.edu
+B002 Terry           Buttler         senior              3 buttler@bu.edu
+B003 Tracy           Wang            senior              4 wang@bu.edu
+B004 Barbara         Callan          junior            2.5 callan@bu.edu
+B005 Jack            Smith           graduate            3 smith@bu.edu
+B006 Terry           Zillman         graduate            4 zillman@bu.edu
+B007 Becky           Lee             senior              4 lee@bu.edu
+B008 Tom             Baker           freshman              baker@bu.edu
+
+Courses
+DEPT    COURSE# TITLE
+---- ---------- --------------------
+CS          432 database systems
+Math        314 discrete math
+CS          240 data structure
+Math        221 calculus I
+CS          532 database systems
+CS          552 operating systems
+BIOL        425 molecular biology
+
+Course_credits
+   COURSE#    CREDITS
+---------- ----------
+       432          4
+       314          4
+       240          4
+       221          4
+       532          3
+       552          3
+       425          4
+
+Classes
+CLASS DEPT    COURSE#      SECT#       YEAR SEMEST      LIMIT CLASS_SIZE
+----- ---- ---------- ---------- ---------- ------ ---------- ----------
+c0001 CS          432          1       2016 Spring         35         34
+c0002 Math        314          1       2015 Fall           25         24
+c0003 Math        314          2       2015 Fall           25         22
+c0004 CS          432          1       2015 Spring         30         30
+c0005 CS          240          1       2016 Spring         40         39
+c0006 CS          532          1       2016 Spring         29         28
+c0007 Math        221          1       2016 Spring         30         30
+
+Enrollments
+SID  CLASS L
+---- ----- -
+B001 c0001 A
+B002 c0002 B
+B003 c0004 A
+B004 c0004 C
+B004 c0005 B
+B005 c0006 B
+B006 c0006 A
+B001 c0002 C
+B003 c0005
+B007 c0007 A
+B001 c0003 B
+B001 c0006 B
+B001 c0004 A
+B001 c0005 B
+
+Grades
+L     NGRADE
+- ----------
+A          4
+B          3
+C          2
+D          1
+F          0
+I
+
+
+
+

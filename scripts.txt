@@ -1,0 +1,341 @@
+—Project1 Scripts—
+—Aravind Venkit, B00656187, avenkit2@binghamton.edu—
+
+1. Find the dept_code, course# and title of each course that was offered in the Spring semester of 2016. In the output, dept_code and course# of each course should be cONcatenated under a new column header course_id.
+
+SELECT 
+ (dept_code || cast(course# as varchar2(10))) as course_id , 
+ title 
+FROM 
+ courses 
+WHERE
+(dept_code, course#) IN
+ (SELECT dept_code, course# 
+ FROM classes 
+ WHERE 
+ year = 2016 
+ AND semester = 'Spring');
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+2. Find the first name of each student who has taken at least ONe CS course and at least ONe math course.
+
+SELECT 
+ distinct firstname 
+FROM 
+ students 
+WHERE
+ sid IN 
+ (SELECT sid FROM Enrollments WHERE classid IN (SELECT classid FROM classes WHERE dept_code = 'CS') 
+  INTERSECT
+ SELECT sid FROM Enrollments WHERE classid IN (SELECT classid FROM classes WHERE dept_code = 'Math'));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+3. Find the dept_code and course# of each course that was not offered in 2015.
+
+SELECT 
+ dept_code, 
+ course# 
+FROM 
+ courses 
+WHERE 
+(dept_code, course#) NOT IN (SELECT dept_code, course# FROM classes WHERE year = 2015);
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+4. Find the sid, firstname and GPA of each undergraduate student who has received an A for at least one course he/she has taken. 
+
+SELECT 
+ sid, 
+ firstname, 
+ gpa 
+FROM 
+ students 
+WHERE 
+ status IN ('freshman', 'sophomore', 'junior', 'senior') 
+ and sid IN (SELECT sid FROM Enrollments WHERE lgrade = 'A');
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+5. Find the firstname of each student who has never received an A for any course he/she has taken. If you write a nested query, make sure the subquery is uncorrelated.
+
+SELECT 
+ distinct firstname 
+FROM 
+ students 
+WHERE 
+ sid NOT IN (SELECT sid FROM Enrollments WHERE lgrade = 'A'); 
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+6. Find the sid and firstname of each student who has received an A for every course he/she has taken. Count only classes for which he/she received a non-null grade. GPA information is not permitted to be used in this query.
+
+SELECT 
+ sid, 
+ firstname 
+FROM 
+ students 
+WHERE 
+ sid IN (SELECT sid FROM enrollments GROUP BY  sid HAVING max(lgrade) = 'A');
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+7. Find the dept_code and course# of each course that has been offered the most number of times (each record in the classes table corresponds to a course offering). Note that it is possible that more than one course may satisfy this query condition; in this case, all such courses should be retrieved.
+
+SELECT 
+ dept_code, 
+ course# 
+FROM 
+ courses 
+WHERE 
+(dept_code, course#) 
+  IN (SELECT 
+       dept_code, 
+       course# 
+      FROM 
+       classes 
+      GROUP BY dept_code, course#      HAVING count(*) = (SELECT max(count(*)) FROM classes GROUP BY dept_code, course#));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+8. Find the classid, dept_code and course# of each class offered in Spring 2016 that is not full and for each such class, also list the number of seats available (computed by limit – class_size) under the header “seats_available’.
+
+SELECT 
+ classid, 
+ dept_code, 
+ course# , 
+ (limit - class_size) as seats_available 
+FROM 
+ classes 
+WHERE 
+ limit > class_size 
+ and year = 2016 
+ and semester = 'Spring';
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+9. Find every student (all attributes are needed) who has taken more than 4 classes.
+
+SELECT 
+ * 
+FROM 
+ students 
+WHERE 
+ sid in (SELECT sid FROM Enrollments group by sid having count(sid)>4);
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+10. Find every class (all attributes are needed) that is offered by the CS department in the Spring semester of 2016 and has less than 3 students enrolled. For this query, you are not allowed to use the size information from the classes table.
+
+SELECT 
+ * 
+FROM 
+ classes 
+WHERE 
+ dept_code = 'CS' 
+ and year = 2016 
+ and semester = 'Spring' 
+ and classid IN ( SELECT classid FROM enrollments group by classid having count(classid)<3);
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+11. Find the sid and first name of every student who has taken all 400-level CS courses. Here we are referring to courses, not classes.
+
+SELECT 
+ st.sid, 
+ st.firstname 
+FROM 
+ students st 
+WHERE NOT EXISTS (SELECT * FROM courses cr WHERE dept_code = 'CS' and course# like '4%' and NOT EXISTS   (SELECT en.* FROM enrollments en JOIN classes cl ON en.classid = cl.classid WHERE en.sid = st.sid and cl.dept_code = cr.dept_code and cl.course# = cr.course#));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+12. Find the title of each course that has been taken by student B001 but not by student B002.
+
+SELECT 
+ distinct title 
+FROM 
+ courses 
+WHERE 
+ (dept_code, course#) IN ((SELECT dept_code, course# FROM classes WHERE classid in (SELECT classid FROM enrollments WHERE sid = 'B001')) 
+                           MINUS 
+                          (SELECT dept_code, course# FROM classes WHERE classid in (SELECT classid FROM enrollments WHERE sid = 'B002')));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+13. Find the first name of every student who has taken at least one course that has been taken by student B005. Note that here we are talking about taking the same course, not just the same class. (Clearly, student B005 satisfies the condition and his first name should be included in the output.)
+
+SELECT 
+ distinct firstname 
+FROM 
+ students st 
+ JOIN enrollments en 
+ ON st.sid = en.sid 
+ JOIN classes cl  
+ ON en.classid = cl.classid 
+WHERE (cl.dept_code, cl.course#) IN     (SELECT cl1.dept_code, cl1.course# FROM classes cl1 JOIN enrollments en1 ON cl1.classid = en1.classid WHERE en1.sid = 'B005');
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+14. Find the dept_code and course# of each course that has two or more classes in the same semester of the same year. The query should also show the semester and year information for each qualified course.
+
+SELECT 
+ cr.dept_code, 
+ cr.course#, 
+ cl.year, 
+ cl.semester 
+FROM 
+ courses cr 
+ JOIN classes cl 
+ ON cr.dept_code = cl.dept_code and cr.course# = cl.course# 
+WHERE 
+ sect#>1;
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+15. Find the sid and firstname of each student who has received at least one highest grade in one of the classes he/she has taken. Suppose all possible grades are (A, B, C, D, F, I). Note that the highest grade given to students in a class is not necessarily A, for example, when all students in the class did poorly. 
+
+SELECT 
+ sid, 
+ firstname 
+FROM 
+ students where sid in (
+ select sid from enrollments en  
+WHERE 
+ en.lgrade in (SELECT min(lgrade) FROM enrollments en1 WHERE en1.classid = en.classid));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+16. List the dept_code, course# and title of each course that has been taken by student B003. For each such course, also list the grade the student received. If no grade has been assigned for a course, output “to be assigned” as the grade information for the course.
+
+SELECT 
+ distinct cr.dept_code, 
+ cr.course#, 
+ cr.title, 
+ nvl(en.lgrade, 'to be assigned') as GRADE 
+FROM 
+ courses cr 
+ JOIN classes cl 
+ ON cr.dept_code = cl.dept_code and cr.course# = cl.course# 
+ JOIN enrollments en 
+ ON cl.classid = en.classid 
+WHERE 
+ en.sid = 'B003';
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+17. Find the dept_code, course# and title of each course whose title contains “systems” and that has been taken by all students whose GPA is higher than 3.25. Note that even though a qualified course is required to be taken by all students whose GPA is higher than 3.25, it may also be taken by some students whose GPA is not higher than 3.25.
+
+SELECT 
+ dept_code, 
+ course#, 
+ title 
+FROM 
+ courses
+WHERE 
+ title like '%systems%'
+ and (dept_code, course#) 
+        IN (SELECT cl.dept_code, cl.course# 
+            FROM classes cl
+             WHERE NOT EXISTS 
+               (SELECT * FROM students st WHERE st.gpa > 3.25 
+                 and NOT EXISTS (SELECT * FROM enrollments en 
+                WHERE en.sid = st.sid and en.classid = cl.classid)));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+18. Find the sid, firstname and the total number of credits that have been earned by each student. If a student has not taken any course, he/she is assumed to have earned zero credits and zero credits should be reported for such a student. Don’t count the credits when no grade is given for a class.
+
+(SELECT 
+ st.sid, 
+ st.firstname, 
+ sum(cc.credits) as total_credit
+FROM 
+ students st 
+ JOIN enrollments en 
+ ON st.sid = en.sid 
+ JOIN classes cl 
+ ON cl.classid = en.classid 
+ JOIN courses cr 
+ ON cl.dept_code = cr.dept_code and cl.course# = cr.course# 
+ JOIN course_credit cc ON cr.course# = cc.course# 
+WHERE 
+ en.lgrade is not null GROUP BY st.sid, st.firstname)
+UNION 
+(SELECT 
+ sid, 
+ firstname, 
+ 0 
+FROM 
+ students 
+WHERE 
+sid not in (SELECT sid FROM enrollments));
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+19. Find the average total number of credits earned by students (the average is over all students and only one value should be computed) who have taken at least one course. Don’t count the credits when no grade is given for a class.
+
+SELECT 
+ avg(t_credits. t_credit) as average_of_Total_credit
+FROM 
+ (SELECT 
+   st.sid, 
+   st.firstname, 
+   sum(cc.credits) as t_credit 
+  FROM 
+   students st 
+   JOIN enrollments en 
+   ON st.sid = en.sid 
+   JOIN classes cl 
+   ON cl.classid = en.classid 
+   JOIN courses cr 
+   ON cl.dept_code = cr.dept_code and cl.course# = cr.course# 
+   JOIN course_credit cc   
+   ON cr.course# = cc.course# 
+  WHERE 
+   en.lgrade is not null GROUP BY st.sid, st.firstname
+ ) t_credits;
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+20. Compute the GPA for each student from the student’s number grades (ngrade) for all the courses he/she has taken (ignore the GPA values already in the students table). The GPA of a student is computed by dividing the sum of his/her number grades by the number of classes he/she has taken and received a non-null number grade. If a student has not received any non-null grade yet, the student’s GPA will be null. For each student, the sid of the student and the computed GPA (name column head as cgpa) should be displayed. Display the results in descending non-null GPA values.
+
+(SELECT 
+ en.sid, 
+ avg(nvl(gd.ngrade,0)) as cgpa 
+FROM 
+ enrollments en 
+ JOIN grades gd 
+ ON en.lgrade = gd.lgrade 
+WHERE 
+ en.lgrade is not null GROUP BY en.sid)
+UNION
+(SELECT 
+ sid, 
+ null as cgpa 
+FROM 
+ students 
+WHERE 
+ sid not in(SELECT sid FROM enrollments))
+ORDER BY cgpa desc;
+
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  

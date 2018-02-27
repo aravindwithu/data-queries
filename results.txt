@@ -1,0 +1,394 @@
+
+
+—Aravind Venkit, B00656187, avenkit2@binghamton.edu—
+
+
+SQL> start query1
+SQL> SELECT
+  2   (dept_code || cast(course# as varchar2(10))) as course_id ,
+  3   title
+  4  FROM
+  5   courses
+  6  WHERE
+  7  (dept_code, course#) IN
+  8   (SELECT dept_code, course#
+  9   FROM classes
+ 10   WHERE
+ 11   year = 2016
+ 12   AND semester = 'Spring');
+
+COURSE_ID      TITLE                                                            
+-------------- --------------------                                             
+CS432          database systems                                                 
+CS240          data structure                                                   
+Math221        calculus I                                                       
+CS532          database systems                                                 
+
+SQL> start query2
+SQL> SELECT
+  2   distinct firstname
+  3  FROM
+  4   students
+  5  WHERE
+  6   sid IN
+  7   (SELECT sid FROM Enrollments WHERE classid IN (SELECT classid FROM classes WHERE dept_code = 'CS')
+  8    INTERSECT
+  9   SELECT sid FROM Enrollments WHERE classid IN (SELECT classid FROM classes WHERE dept_code = 'Math'));
+
+FIRSTNAME                                                                       
+---------------                                                                 
+Anne                                                                            
+
+SQL> start query3
+SQL> SELECT
+  2   dept_code,
+  3   course#
+  4  FROM
+  5   courses
+  6  WHERE
+  7  (dept_code, course#) NOT IN (SELECT dept_code, course# FROM classes WHERE year = 2015);
+
+DEPT    COURSE#                                                                 
+---- ----------                                                                 
+BIOL        425                                                                 
+CS          532                                                                 
+CS          240                                                                 
+Math        221                                                                 
+CS          552                                                                 
+
+SQL> start query4
+SQL> SELECT
+  2   sid,
+  3   firstname,
+  4   gpa
+  5  FROM
+  6   students
+  7  WHERE
+  8   status IN ('freshman', 'sophomore', 'junior', 'senior')
+  9   and sid IN (SELECT sid FROM Enrollments WHERE lgrade = 'A');
+
+SID  FIRSTNAME              GPA                                                 
+---- --------------- ----------                                                 
+B001 Anne                  3.17                                                 
+B003 Tracy                    4                                                 
+B007 Becky                    4                                                 
+
+SQL> start query5
+SQL> SELECT
+  2   distinct firstname
+  3  FROM
+  4   students
+  5  WHERE
+  6   sid NOT IN (SELECT sid FROM Enrollments WHERE lgrade = 'A');
+
+FIRSTNAME                                                                       
+---------------                                                                 
+Terry                                                                           
+Jack                                                                            
+Barbara                                                                         
+Tom                                                                             
+
+SQL> start query6
+SQL> SELECT
+  2   sid,
+  3   firstname
+  4  FROM
+  5   students
+  6  WHERE
+  7   sid IN (SELECT sid FROM enrollments GROUP BY  sid HAVING max(lgrade) = 'A');
+
+SID  FIRSTNAME                                                                  
+---- ---------------                                                            
+B003 Tracy                                                                      
+B006 Terry                                                                      
+B007 Becky                                                                      
+
+SQL> start query7
+SQL> SELECT
+  2   dept_code,
+  3   course#
+  4  FROM
+  5   courses
+  6  WHERE
+  7  (dept_code, course#)
+  8    IN (SELECT
+  9  	    dept_code,
+ 10  	    course#
+ 11  	   FROM
+ 12  	    classes
+ 13  	   GROUP BY dept_code, course#      HAVING count(*) = (SELECT max(count(*)) FROM classes GROUP BY dept_code, course#));
+
+DEPT    COURSE#                                                                 
+---- ----------                                                                 
+Math        314                                                                 
+CS          432                                                                 
+
+SQL> start query8
+SQL> SELECT
+  2   classid,
+  3   dept_code,
+  4   course# ,
+  5   (limit - class_size) as seats_available
+  6  FROM
+  7   classes
+  8  WHERE
+  9   limit > class_size
+ 10   and year = 2016
+ 11   and semester = 'Spring';
+
+CLASS DEPT    COURSE# SEATS_AVAILABLE                                           
+----- ---- ---------- ---------------                                           
+c0005 CS          240               1                                           
+c0001 CS          432               1                                           
+c0006 CS          532               1                                           
+
+SQL> start query9
+SQL> SELECT
+  2   *
+  3  FROM
+  4   students
+  5  WHERE
+  6   sid in (SELECT sid FROM Enrollments group by sid having count(sid)>4);
+
+SID  FIRSTNAME       LASTNAME        STATUS            GPA EMAIL                
+---- --------------- --------------- ---------- ---------- -------------------- 
+B001 Anne            Broder          junior           3.17 broder@bu.edu        
+
+SQL> start query10
+SQL> SELECT
+  2   *
+  3  FROM
+  4   classes
+  5  WHERE
+  6   dept_code = 'CS'
+  7   and year = 2016
+  8   and semester = 'Spring'
+  9   and classid IN ( SELECT classid FROM enrollments group by classid having count(classid)<3);
+
+CLASS DEPT    COURSE#      SECT#       YEAR SEMEST      LIMIT CLASS_SIZE        
+----- ---- ---------- ---------- ---------- ------ ---------- ----------        
+c0001 CS          432          1       2016 Spring         35         34        
+
+SQL> start query11
+SQL> SELECT
+  2   st.sid,
+  3   st.firstname
+  4  FROM
+  5   students st
+  6  WHERE NOT EXISTS (SELECT * FROM courses cr WHERE dept_code = 'CS' and course# like '4%' and NOT EXISTS   (SELECT en.* FROM enrollments en JOIN classes cl ON en.classid = cl.classid WHERE en.sid = st.sid and cl.dept_code = cr.dept_code and cl.course# = cr.course#));
+
+SID  FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+
+SQL> start query12
+SQL> SELECT
+  2   distinct title
+  3  FROM
+  4   courses
+  5  WHERE
+  6   (dept_code, course#) IN ((SELECT dept_code, course# FROM classes WHERE classid in (SELECT classid FROM enrollments WHERE sid = 'B001'))
+  7  				MINUS
+  8  			       (SELECT dept_code, course# FROM classes WHERE classid in (SELECT classid FROM enrollments WHERE sid = 'B002')));
+
+TITLE                                                                           
+--------------------                                                            
+data structure                                                                  
+database systems                                                                
+
+SQL> start query13
+SQL> SELECT
+  2   distinct firstname
+  3  FROM
+  4   students st
+  5   JOIN enrollments en
+  6   ON st.sid = en.sid
+  7   JOIN classes cl
+  8   ON en.classid = cl.classid
+  9  WHERE (cl.dept_code, cl.course#) IN     (SELECT cl1.dept_code, cl1.course# FROM classes cl1 JOIN enrollments en1 ON cl1.classid = en1.classid WHERE en1.sid = 'B005');
+
+FIRSTNAME                                                                       
+---------------                                                                 
+Terry                                                                           
+Jack                                                                            
+Anne                                                                            
+
+SQL> start query14
+SQL> SELECT
+  2   cr.dept_code,
+  3   cr.course#,
+  4   cl.year,
+  5   cl.semester
+  6  FROM
+  7   courses cr
+  8   JOIN classes cl
+  9   ON cr.dept_code = cl.dept_code and cr.course# = cl.course#
+ 10  WHERE
+ 11   sect#>1;
+
+DEPT    COURSE#       YEAR SEMEST                                               
+---- ---------- ---------- ------                                               
+Math        314       2015 Fall                                                 
+
+SQL> start query15
+SQL> SELECT
+  2   sid,
+  3   firstname
+  4  FROM
+  5   students where sid in (
+  6   select sid from enrollments en
+  7  WHERE
+  8   en.lgrade in (SELECT min(lgrade) FROM enrollments en1 WHERE en1.classid = en.classid));
+
+SID  FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B002 Terry                                                                      
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+B006 Terry                                                                      
+B007 Becky                                                                      
+
+6 rows selected.
+
+SQL> start query16
+SQL> SELECT
+  2   distinct cr.dept_code,
+  3   cr.course#,
+  4   cr.title,
+  5   nvl(en.lgrade, 'to be assigned') as GRADE
+  6  FROM
+  7   courses cr
+  8   JOIN classes cl
+  9   ON cr.dept_code = cl.dept_code and cr.course# = cl.course#
+ 10   JOIN enrollments en
+ 11   ON cl.classid = en.classid
+ 12  WHERE
+ 13   en.sid = 'B003';
+
+DEPT    COURSE# TITLE                GRADE                                      
+---- ---------- -------------------- --------------                             
+CS          240 data structure       to be assigned                             
+CS          432 database systems     A                                          
+
+SQL> start query17
+SQL> SELECT
+  2   dept_code,
+  3   course#,
+  4   title
+  5  FROM
+  6   courses
+  7  WHERE
+  8   title like '%systems%'
+  9   and (dept_code, course#)
+ 10  	     IN (SELECT cl.dept_code, cl.course#
+ 11  		 FROM classes cl
+ 12  		  WHERE NOT EXISTS
+ 13  		    (SELECT * FROM students st WHERE st.gpa > 3.25
+ 14  		      and NOT EXISTS (SELECT * FROM enrollments en
+ 15  		     WHERE en.sid = st.sid and en.classid = cl.classid)));
+
+no rows selected
+
+SQL> start query18
+SQL> 
+SQL> (SELECT
+  2   st.sid,
+  3   st.firstname,
+  4   sum(cc.credits) as total_credit
+  5  FROM
+  6   students st
+  7   JOIN enrollments en
+  8   ON st.sid = en.sid
+  9   JOIN classes cl
+ 10   ON cl.classid = en.classid
+ 11   JOIN courses cr
+ 12   ON cl.dept_code = cr.dept_code and cl.course# = cr.course#
+ 13   JOIN course_credit cc ON cr.course# = cc.course#
+ 14  WHERE
+ 15   en.lgrade is not null GROUP BY st.sid, st.firstname)
+ 16  UNION
+ 17  (SELECT
+ 18   sid,
+ 19   firstname,
+ 20   0
+ 21  FROM
+ 22   students
+ 23  WHERE
+ 24  sid not in (SELECT sid FROM enrollments));
+
+SID  FIRSTNAME       TOTAL_CREDIT                                               
+---- --------------- ------------                                               
+B001 Anne                      23                                               
+B002 Terry                      4                                               
+B003 Tracy                      4                                               
+B004 Barbara                    8                                               
+B005 Jack                       3                                               
+B006 Terry                      3                                               
+B007 Becky                      4                                               
+B008 Tom                        0                                               
+
+8 rows selected.
+
+SQL> start query19
+SQL> SELECT
+  2   avg(t_credits. t_credit) as average_of_Total_credit
+  3  FROM
+  4   (SELECT
+  5  	st.sid,
+  6  	st.firstname,
+  7  	sum(cc.credits) as t_credit
+  8    FROM
+  9  	students st
+ 10  	JOIN enrollments en
+ 11  	ON st.sid = en.sid
+ 12  	JOIN classes cl
+ 13  	ON cl.classid = en.classid
+ 14  	JOIN courses cr
+ 15  	ON cl.dept_code = cr.dept_code and cl.course# = cr.course#
+ 16  	JOIN course_credit cc
+ 17  	ON cr.course# = cc.course#
+ 18    WHERE
+ 19  	en.lgrade is not null GROUP BY st.sid, st.firstname
+ 20   ) t_credits;
+
+AVERAGE_OF_TOTAL_CREDIT                                                         
+-----------------------                                                         
+                      7                                                         
+
+SQL> start query20
+SQL> (SELECT
+  2   en.sid,
+  3   avg(nvl(gd.ngrade,0)) as cgpa
+  4  FROM
+  5   enrollments en
+  6   JOIN grades gd
+  7   ON en.lgrade = gd.lgrade
+  8  WHERE
+  9   en.lgrade is not null GROUP BY en.sid)
+ 10  UNION
+ 11  (SELECT
+ 12   sid,
+ 13   null as cgpa
+ 14  FROM
+ 15   students
+ 16  WHERE
+ 17   sid not in(SELECT sid FROM enrollments))
+ 18  ORDER BY cgpa desc;
+
+SID        CGPA                                                                 
+---- ----------                                                                 
+B008                                                                            
+B003          4                                                                 
+B006          4                                                                 
+B007          4                                                                 
+B001 3.16666667                                                                 
+B002          3                                                                 
+B005          3                                                                 
+B004        2.5                                                                 
+
+8 rows selected.
+
+SQL> spool off
